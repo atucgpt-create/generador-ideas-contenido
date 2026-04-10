@@ -1,655 +1,516 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generador de Ideas de Contenido</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --purple: #7F77DD;
-      --purple-light: #EEEDFE;
-      --purple-dark: #3C3489;
-      --gray-bg: #F8F8F8;
-      --border: #E5E5E5;
-      --text: #1a1a1a;
-      --text-muted: #666;
-      --white: #fff;
-      --radius: 12px;
-      --radius-sm: 8px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--gray-bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* HEADER */
-    header {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo { font-size: 16px; font-weight: 600; color: var(--text); }
-    .logo span { color: var(--purple); }
-    .nav-tabs { display: flex; gap: 4px; }
-    .nav-tab {
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      transition: all 0.15s;
-    }
-    .nav-tab.active { background: var(--purple-light); color: var(--purple-dark); font-weight: 500; }
-    .nav-tab:hover:not(.active) { background: var(--gray-bg); }
-
-    /* PÁGINAS */
-    .page { display: none; max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
-    .page.active { display: block; }
-
-    /* HERO */
-    .hero { margin-bottom: 2rem; }
-    .hero h1 { font-size: 26px; font-weight: 600; margin-bottom: 8px; }
-    .hero p { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
-
-    /* FORMULARIO */
-    .card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .field { margin-bottom: 1.25rem; }
-    .field:last-child { margin-bottom: 0; }
-    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
-    select, input[type="text"] {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--white);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    select:focus, input:focus { border-color: var(--purple); }
-
-    /* CHIPS DE FORMATO */
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      padding: 6px 14px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 13px;
-      cursor: pointer;
-      background: var(--white);
-      color: var(--text-muted);
-      transition: all 0.15s;
-      user-select: none;
-    }
-    .chip.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
-
-    /* CANTIDAD */
-    .cantidad-opts { display: flex; gap: 8px; }
-    .cantidad-opt {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      text-align: center;
-      font-size: 14px;
-      cursor: pointer;
-      background: var(--white);
-      color: var(--text-muted);
-      transition: all 0.15s;
-    }
-    .cantidad-opt.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
-
-    /* BOTÓN PRINCIPAL */
-    .btn-primary {
-      width: 100%;
-      padding: 14px;
-      background: var(--purple);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 15px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      margin-top: 1rem;
-    }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* BOTÓN SECUNDARIO */
-    .btn-sec {
-      padding: 8px 16px;
-      background: var(--white);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-sec:hover { background: var(--gray-bg); }
-
-    /* LOADING */
-    .loading-wrap { text-align: center; padding: 3rem 1rem; }
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid var(--purple-light);
-      border-top-color: var(--purple);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-wrap p { color: var(--text-muted); font-size: 14px; }
-
-    /* RESULTADOS */
-    .results-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-    .results-header h2 { font-size: 16px; font-weight: 500; }
-    .results-actions { display: flex; gap: 8px; }
-
-    /* IDEA CARD */
-    .idea-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      margin-bottom: 10px;
-      position: relative;
-    }
-    .idea-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-    .idea-num { font-size: 11px; font-weight: 600; color: var(--purple); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .idea-titulo { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.4; }
-    .save-btn {
-      flex-shrink: 0;
-      width: 32px; height: 32px;
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      background: var(--white);
-      cursor: pointer;
-      font-size: 16px;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
-    }
-    .save-btn:hover { background: var(--purple-light); border-color: var(--purple); }
-    .save-btn.saved { background: var(--purple-light); border-color: var(--purple); }
-    .idea-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
-    .idea-hook {
-      background: var(--purple-light);
-      border-left: 3px solid var(--purple);
-      padding: 8px 12px;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      font-size: 13px;
-      color: var(--purple-dark);
-      margin-bottom: 10px;
-      font-style: italic;
-    }
-    .idea-hook-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; font-style: normal; }
-    .idea-tag {
-      display: inline-block;
-      font-size: 11px;
-      padding: 3px 10px;
-      background: var(--purple-light);
-      color: var(--purple-dark);
-      border-radius: 20px;
-      font-weight: 500;
-    }
-
-    /* ERROR */
-    .error-box {
-      background: #FFF0F0;
-      border: 1px solid #FFCDD2;
-      color: #C62828;
-      padding: 1rem;
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      margin-top: 1rem;
-    }
-
-    /* BANCO DE IDEAS */
-    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
-    .empty-state .icon { font-size: 40px; margin-bottom: 1rem; }
-    .empty-state p { font-size: 15px; }
-    .banco-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .banco-header h2 { font-size: 18px; font-weight: 500; }
-    .badge { font-size: 12px; background: var(--purple-light); color: var(--purple-dark); padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
-
-    /* HISTORIAL */
-    .historial-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-    .historial-left { display: flex; flex-direction: column; gap: 2px; }
-    .historial-rubro { font-weight: 500; }
-    .historial-meta { font-size: 12px; color: var(--text-muted); }
-    .historial-btn { font-size: 12px; color: var(--purple); cursor: pointer; background: none; border: none; font-family: inherit; }
-
-    /* RESPONSIVE */
-    @media (max-width: 480px) {
-      .nav-tabs { gap: 2px; }
-      .nav-tab { padding: 6px 10px; font-size: 12px; }
-      header { padding: 0.75rem 1rem; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CM Suite — Tu herramienta de contenido</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p:#7F77DD;--pl:#EEEDFE;--pd:#3C3489;
+  --bg:#F7F7F8;--white:#fff;--border:#E5E5E5;
+  --text:#1a1a1a;--muted:#666;--radius:12px;--radius-sm:8px;
+  --danger:#C62828;--danger-bg:#FFF0F0;--danger-border:#FFCDD2;
+  --success:#2E7D32;--success-bg:#F1F8E9;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--white);border-bottom:1px solid var(--border);padding:.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{font-size:15px;font-weight:700;letter-spacing:-.3px}.logo span{color:var(--p)}
+nav{display:flex;gap:3px;overflow-x:auto}
+.nav-btn{padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:none;background:transparent;color:var(--muted);white-space:nowrap;transition:all .15s}
+.nav-btn.active{background:var(--pl);color:var(--pd);font-weight:600}
+.nav-btn:hover:not(.active){background:var(--bg)}
+.page{display:none;max-width:720px;margin:0 auto;padding:1.5rem 1rem}
+.page.active{display:block}
+.page-title{font-size:22px;font-weight:600;margin-bottom:6px}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:600;margin-bottom:1rem;color:var(--text)}
+.field{margin-bottom:1rem}.field:last-child{margin-bottom:0}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+input[type=text],textarea,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--white);outline:none;transition:border-color .15s;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:var(--p)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.grid2{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 12px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:var(--white);color:var(--muted);transition:all .15s;user-select:none}
+.chip.active{background:var(--pl);border-color:var(--p);color:var(--pd);font-weight:500}
+.btn{padding:10px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:var(--white);color:var(--text)}
+.btn:hover{background:var(--bg)}
+.btn-primary{background:var(--p);color:var(--white);border-color:var(--p);width:100%;padding:12px}
+.btn-primary:hover{opacity:.9;background:var(--p)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-danger{color:var(--danger);border-color:var(--danger-border)}
+.loading{text-align:center;padding:3rem 1rem}
+.spinner{width:32px;height:32px;border:3px solid var(--pl);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:var(--muted);font-size:13px}
+.error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:.75rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-top:1rem}
+.success-bar{background:var(--success-bg);border:1px solid #C8E6C9;color:var(--success);padding:.75rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:1rem}
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:1rem}
+.cal-day-name{font-size:11px;font-weight:600;color:var(--muted);text-align:center;padding:4px 0}
+.cal-cell{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 6px;min-height:80px;cursor:pointer;transition:all .15s}
+.cal-cell:hover{border-color:var(--p);background:var(--pl)}
+.cal-cell.has-post{border-left:3px solid var(--p)}
+.cal-cell.empty{background:var(--bg);cursor:default;opacity:.5}
+.cal-num{font-size:11px;color:var(--muted);margin-bottom:4px}
+.cal-formato{font-weight:600;color:var(--pd);font-size:10px}
+.cal-tema{color:var(--text);font-size:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.plan-list{display:none}
+.plan-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.plan-item:hover{border-color:var(--p)}
+.plan-item-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.plan-dia{font-size:12px;color:var(--muted)}
+.plan-formato{font-size:11px;background:var(--pl);color:var(--pd);padding:2px 8px;border-radius:20px;font-weight:600}
+.plan-tema{font-size:14px;font-weight:500}
+.plan-angulo{font-size:12px;color:var(--muted);margin-top:2px}
+@media(max-width:600px){.cal-grid,.cal-header{display:none}.plan-list{display:block}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--white);border-radius:var(--radius);max-width:640px;width:100%;max-height:90vh;overflow-y:auto;padding:1.5rem}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:1rem}
+.modal-title{font-size:18px;font-weight:600;line-height:1.3}
+.modal-close{flex-shrink:0;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px}
+.pieza-section{margin-bottom:1.25rem}
+.pieza-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--p);margin-bottom:8px}
+.pieza-hook{background:var(--pl);border-left:3px solid var(--p);padding:10px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:15px;font-weight:500;color:var(--pd);font-style:italic}
+.guion-block{background:var(--bg);border-radius:var(--radius-sm);padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap}
+.guion-part{margin-bottom:10px}
+.guion-part-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.toma-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px}
+.toma-num{font-size:11px;font-weight:700;color:var(--p);margin-bottom:6px}
+.toma-row{font-size:12px;color:var(--text);margin-bottom:3px;line-height:1.5}
+.toma-row span{color:var(--muted);font-weight:500}
+.copy-box{background:var(--bg);border-radius:var(--radius-sm);padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap;cursor:pointer;transition:background .15s}
+.copy-box:hover{background:var(--pl)}
+.hashtags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hashtag{font-size:12px;color:var(--pd);background:var(--pl);padding:3px 10px;border-radius:20px}
+.tip-box{background:#FFF8E1;border:1px solid #FFE082;border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:#5D4037}
+.banco-item{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:8px}
+.banco-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.banco-tema{font-size:14px;font-weight:500}
+.banco-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.banco-hook{font-size:13px;color:var(--pd);font-style:italic;margin-top:6px;padding-left:8px;border-left:2px solid var(--p)}
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:1rem}
+.badge{display:inline-block;font-size:10px;background:var(--p);color:var(--white);padding:2px 7px;border-radius:20px;margin-left:4px;vertical-align:middle}
+.nivel{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
+.nivel-bajo{background:#E8F5E9;color:#2E7D32}
+.nivel-medio{background:#FFF8E1;color:#F57F17}
+.nivel-alto{background:#FCE4EC;color:#880E4F}
+</style>
 </head>
 <body>
-
 <header>
-  <div class="logo">ideas<span>AI</span></div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('generador')">Generador</button>
-    <button class="nav-tab" onclick="showPage('banco')">Banco <span id="banco-count"></span></button>
-    <button class="nav-tab" onclick="showPage('historial')">Historial</button>
-  </div>
+  <div class="logo">cm<span>suite</span></div>
+  <nav>
+    <button class="nav-btn active" onclick="goPage('perfil',this)">Marca</button>
+    <button class="nav-btn" onclick="goPage('planificador',this)">Planificador</button>
+    <button class="nav-btn" onclick="goPage('ideas',this)">Ideas</button>
+    <button class="nav-btn" onclick="goPage('banco',this)">Banco <span class="badge" id="badge-banco">0</span></button>
+  </nav>
 </header>
 
-<!-- PÁGINA: GENERADOR -->
-<div class="page active" id="page-generador">
-  <div class="hero">
-    <h1>Generá ideas de contenido ✨</h1>
-    <p>Completá los campos y la IA te genera ideas originales con hook incluido.</p>
-  </div>
-
+<!-- PERFIL -->
+<div class="page active" id="page-perfil">
+  <p class="page-title">Perfil de marca</p>
+  <p class="page-sub">Completá estos datos una sola vez. Todo lo que generés después va a estar personalizado para tu marca.</p>
   <div class="card">
-    <div class="field">
-      <label>¿A qué rubro pertenecés?</label>
-      <select id="rubro">
-        <option value="">Seleccioná tu rubro...</option>
-        <option>Fitness y entrenamiento</option>
-        <option>Nutrición y alimentación saludable</option>
-        <option>Psicología y bienestar mental</option>
-        <option>Finanzas personales e inversiones</option>
-        <option>Emprendimiento y negocios</option>
-        <option>Marketing digital</option>
-        <option>Community management</option>
-        <option>Diseño gráfico</option>
-        <option>Fotografía y video</option>
-        <option>Moda y estilo</option>
-        <option>Belleza y skincare</option>
-        <option>Cocina y gastronomía</option>
-        <option>Viajes y turismo</option>
-        <option>Tecnología y software</option>
-        <option>Educación y coaching</option>
-        <option>Arte y creatividad</option>
-        <option>Inmobiliaria y propiedades</option>
-        <option>Medicina y salud</option>
-        <option>Derecho y asesoría legal</option>
-        <option>Arquitectura e interiorismo</option>
-        <option>Otro</option>
+    <div class="card-title">Datos básicos</div>
+    <div class="grid2">
+      <div class="field"><label>Nombre de la marca</label><input type="text" id="p-nombre" placeholder="Ej: Fit con Laura"/></div>
+      <div class="field"><label>Rubro *</label>
+        <select id="p-rubro">
+          <option value="">Seleccioná...</option>
+          <option>Fitness y entrenamiento</option><option>Nutrición y alimentación saludable</option>
+          <option>Psicología y bienestar mental</option><option>Finanzas personales e inversiones</option>
+          <option>Emprendimiento y negocios</option><option>Marketing digital</option>
+          <option>Community management</option><option>Diseño gráfico</option>
+          <option>Fotografía y video</option><option>Moda y estilo</option>
+          <option>Belleza y skincare</option><option>Cocina y gastronomía</option>
+          <option>Viajes y turismo</option><option>Tecnología y software</option>
+          <option>Educación y coaching</option><option>Arte y creatividad</option>
+          <option>Inmobiliaria y propiedades</option><option>Medicina y salud</option>
+          <option>Derecho y asesoría legal</option><option>Arquitectura e interiorismo</option>
+          <option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Audiencia</label><input type="text" id="p-audiencia" placeholder="Ej: Mujeres 25-40 que quieren bajar de peso sin dietas extremas"/></div>
+    <div class="field"><label>Objetivo principal</label>
+      <select id="p-objetivo">
+        <option value="">Seleccioná...</option>
+        <option>Generar comunidad y posicionamiento</option>
+        <option>Conseguir clientes y ventas directas</option>
+        <option>Educar y posicionarme como referente</option>
+        <option>Vender productos físicos o digitales</option>
+        <option>Crecer en seguidores y alcance</option>
+        <option>Fidelizar clientes existentes</option>
       </select>
     </div>
-
-    <div class="field">
-      <label>¿A quién le hablás? (opcional)</label>
-      <input type="text" id="audiencia" placeholder="Ej: madres primerizas, jóvenes universitarios..." />
+  </div>
+  <div class="card">
+    <div class="card-title">Voz y estilo</div>
+    <div class="field"><label>Tono de comunicación</label>
+      <div class="chips" id="chips-tono">
+        <div class="chip" data-val="cercano y divertido">Cercano y divertido</div>
+        <div class="chip active" data-val="profesional pero humano">Profesional pero humano</div>
+        <div class="chip" data-val="inspiracional y motivador">Inspiracional</div>
+        <div class="chip" data-val="educativo y directo">Educativo y directo</div>
+        <div class="chip" data-val="empático y comprensivo">Empático</div>
+        <div class="chip" data-val="disruptivo y polémico">Disruptivo</div>
+      </div>
     </div>
+    <div class="field"><label>Diferencial / propuesta de valor</label>
+      <textarea id="p-diferencial" rows="2" placeholder="Ej: Soy nutricionista con enfoque en alimentación intuitiva, sin contar calorías"></textarea>
+    </div>
+    <div class="field"><label>Palabras que NO querés usar</label>
+      <input type="text" id="p-evitar" placeholder="Ej: dieta, transformación, motivación..."/></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Plataformas y frecuencia</div>
+    <div class="field"><label>Plataformas activas</label>
+      <div class="chips" id="chips-plataformas">
+        <div class="chip active" data-val="Instagram">Instagram</div>
+        <div class="chip active" data-val="TikTok">TikTok</div>
+        <div class="chip" data-val="YouTube">YouTube</div>
+        <div class="chip" data-val="Facebook">Facebook</div>
+        <div class="chip" data-val="LinkedIn">LinkedIn</div>
+        <div class="chip" data-val="Twitter/X">Twitter/X</div>
+      </div>
+    </div>
+    <div class="field"><label>Frecuencia de posteo</label>
+      <div class="chips" id="chips-frecuencia">
+        <div class="chip" data-val="2x">2 veces/semana</div>
+        <div class="chip active" data-val="3x">3 veces/semana</div>
+        <div class="chip" data-val="5x">5 veces/semana</div>
+        <div class="chip" data-val="diario">Todos los días</div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="guardarPerfil()">Guardar perfil de marca</button>
+  <div id="perfil-msg"></div>
+</div>
 
-    <div class="field">
-      <label>Formato de contenido</label>
-      <div class="chips" id="formatos">
-        <div class="chip active" data-val="Reels / TikTok">Reels / TikTok</div>
+<!-- PLANIFICADOR -->
+<div class="page" id="page-planificador">
+  <p class="page-title">Planificador de contenido</p>
+  <p class="page-sub">Generá tu calendario completo. Hacé click en cualquier día para generar el guión, hook, copy y tomas.</p>
+  <div class="card">
+    <div class="card-title">Período</div>
+    <div class="chips" id="chips-periodo">
+      <div class="chip active" data-val="semanal">Semanal (7 días)</div>
+      <div class="chip" data-val="mensual">Mensual (30 días)</div>
+    </div>
+    <div id="perfil-preview" style="margin-top:1rem;padding:.75rem;background:var(--pl);border-radius:var(--radius-sm);font-size:13px;color:var(--pd);display:none">
+      Usando perfil: <strong id="pp-nombre"></strong> · <strong id="pp-rubro"></strong> · <strong id="pp-frec"></strong>
+    </div>
+    <div id="no-perfil" style="margin-top:1rem;padding:.75rem;background:#FFF8E1;border:1px solid #FFE082;border-radius:var(--radius-sm);font-size:13px;color:#5D4037;display:none">
+      Completá la sección "Marca" primero para mejores resultados.
+    </div>
+    <button class="btn btn-primary" style="margin-top:1rem" onclick="generarPlan()">Generar calendario</button>
+  </div>
+  <div id="plan-result"></div>
+</div>
+
+<!-- IDEAS -->
+<div class="page" id="page-ideas">
+  <p class="page-title">Ideas rápidas</p>
+  <p class="page-sub">Generá ideas sueltas al instante, sin armar un calendario.</p>
+  <div class="card">
+    <div class="grid2">
+      <div class="field"><label>Rubro</label>
+        <select id="i-rubro">
+          <option value="">Seleccioná...</option>
+          <option>Fitness y entrenamiento</option><option>Nutrición y alimentación saludable</option>
+          <option>Psicología y bienestar mental</option><option>Finanzas personales e inversiones</option>
+          <option>Emprendimiento y negocios</option><option>Marketing digital</option>
+          <option>Community management</option><option>Diseño gráfico</option>
+          <option>Fotografía y video</option><option>Moda y estilo</option>
+          <option>Belleza y skincare</option><option>Cocina y gastronomía</option>
+          <option>Viajes y turismo</option><option>Tecnología y software</option>
+          <option>Educación y coaching</option><option>Arte y creatividad</option>
+          <option>Inmobiliaria y propiedades</option><option>Medicina y salud</option>
+          <option>Derecho y asesoría legal</option><option>Arquitectura e interiorismo</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="field"><label>Audiencia (opcional)</label><input type="text" id="i-audiencia" placeholder="Ej: emprendedores"/></div>
+    </div>
+    <div class="field"><label>Formato</label>
+      <div class="chips" id="chips-formato-ideas">
+        <div class="chip active" data-val="Reel / TikTok">Reel / TikTok</div>
         <div class="chip" data-val="Carrusel">Carrusel</div>
         <div class="chip" data-val="Historia">Historia</div>
         <div class="chip" data-val="Post estático">Post estático</div>
         <div class="chip" data-val="Newsletter">Newsletter</div>
         <div class="chip" data-val="Podcast">Podcast</div>
-        <div class="chip" data-val="Blog">Blog</div>
-        <div class="chip" data-val="YouTube">YouTube</div>
       </div>
     </div>
-
-    <div class="field">
-      <label>¿Cuántas ideas?</label>
-      <div class="cantidad-opts">
-        <div class="cantidad-opt" data-val="4">4</div>
-        <div class="cantidad-opt active" data-val="6">6</div>
-        <div class="cantidad-opt" data-val="8">8</div>
-        <div class="cantidad-opt" data-val="10">10</div>
+    <div class="field"><label>Cantidad</label>
+      <div class="chips" id="chips-cantidad">
+        <div class="chip" data-val="4">4</div>
+        <div class="chip active" data-val="6">6</div>
+        <div class="chip" data-val="8">8</div>
+        <div class="chip" data-val="10">10</div>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="generarIdeas()">Generar ideas</button>
   </div>
-
-  <button class="btn-primary" id="genBtn">Generar ideas</button>
-
-  <div id="results"></div>
+  <div id="ideas-result"></div>
 </div>
 
-<!-- PÁGINA: BANCO -->
+<!-- BANCO -->
 <div class="page" id="page-banco">
-  <div class="banco-header">
-    <h2>Banco de ideas <span class="badge" id="banco-total">0</span></h2>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-sec" onclick="exportarTXT()">Exportar TXT</button>
-      <button class="btn-sec" onclick="exportarCSV()">Exportar CSV</button>
-      <button class="btn-sec" onclick="limpiarBanco()" style="color:#C62828;">Limpiar</button>
-    </div>
+  <p class="page-title">Banco de contenido</p>
+  <p class="page-sub">Todo lo que guardaste en un solo lugar.</p>
+  <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+    <button class="btn btn-sm" onclick="exportarTXT()">Exportar TXT</button>
+    <button class="btn btn-sm" onclick="exportarCSV()">Exportar CSV</button>
+    <button class="btn btn-sm btn-danger" onclick="limpiarBanco()">Limpiar</button>
   </div>
   <div id="banco-lista"></div>
 </div>
 
-<!-- PÁGINA: HISTORIAL -->
-<div class="page" id="page-historial">
-  <div class="banco-header">
-    <h2>Historial de búsquedas</h2>
-    <button class="btn-sec" onclick="limpiarHistorial()">Limpiar</button>
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Generando...</div>
+      <button class="modal-close" onclick="cerrarModalBtn()">✕</button>
+    </div>
+    <div id="modal-body"></div>
   </div>
-  <div id="historial-lista"></div>
 </div>
 
 <script>
-  // ---- ESTADO ----
-  let formatoSel = "Reels / TikTok";
-  let cantidadSel = "6";
-  let banco = JSON.parse(localStorage.getItem("banco") || "[]");
-  let historial = JSON.parse(localStorage.getItem("historial") || "[]");
-  let ultimasIdeas = [];
+let perfil=JSON.parse(localStorage.getItem("cm_perfil")||"{}");
+let banco=JSON.parse(localStorage.getItem("cm_banco")||"[]");
+let planActual=[];
+let tonoSel="profesional pero humano";
+let frecuenciaSel="3x";
+let formatoIdeasSel="Reel / TikTok";
+let cantidadSel="6";
 
-  // ---- NAVEGACIÓN ----
-  function showPage(name) {
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
-    document.getElementById("page-" + name).classList.add("active");
-    event.target.classList.add("active");
-    if (name === "banco") renderBanco();
-    if (name === "historial") renderHistorial();
-  }
+function goPage(name,btn){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("page-"+name).classList.add("active");
+  btn.classList.add("active");
+  if(name==="banco")renderBanco();
+  if(name==="planificador")checkPerfilPreview();
+}
 
-  // ---- CHIPS ----
-  document.querySelectorAll(".chip").forEach(c => {
-    c.addEventListener("click", () => {
-      document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
-      c.classList.add("active");
-      formatoSel = c.dataset.val;
+function initChips(id,cb,multi){
+  document.querySelectorAll("#"+id+" .chip").forEach(c=>{
+    c.addEventListener("click",()=>{
+      if(multi)c.classList.toggle("active");
+      else{document.querySelectorAll("#"+id+" .chip").forEach(x=>x.classList.remove("active"));c.classList.add("active");}
+      if(cb)cb();
     });
   });
-  document.querySelectorAll(".cantidad-opt").forEach(c => {
-    c.addEventListener("click", () => {
-      document.querySelectorAll(".cantidad-opt").forEach(x => x.classList.remove("active"));
-      c.classList.add("active");
-      cantidadSel = c.dataset.val;
-    });
+}
+function getChip(id){const a=document.querySelector("#"+id+" .chip.active");return a?a.dataset.val:"";}
+function getChips(id){return[...document.querySelectorAll("#"+id+" .chip.active")].map(c=>c.dataset.val);}
+
+initChips("chips-tono",()=>tonoSel=getChip("chips-tono"));
+initChips("chips-plataformas",null,true);
+initChips("chips-frecuencia",()=>frecuenciaSel=getChip("chips-frecuencia"));
+initChips("chips-periodo");
+initChips("chips-formato-ideas",()=>formatoIdeasSel=getChip("chips-formato-ideas"));
+initChips("chips-cantidad",()=>cantidadSel=getChip("chips-cantidad"));
+
+function cargarPerfil(){
+  if(!perfil.rubro)return;
+  ["nombre","rubro","audiencia","objetivo","diferencial","evitar"].forEach(k=>{
+    const el=document.getElementById("p-"+k);if(el&&perfil[k])el.value=perfil[k];
   });
+  if(perfil.tono){document.querySelectorAll("#chips-tono .chip").forEach(c=>c.classList.toggle("active",c.dataset.val===perfil.tono));tonoSel=perfil.tono;}
+  if(perfil.frecuencia){document.querySelectorAll("#chips-frecuencia .chip").forEach(c=>c.classList.toggle("active",c.dataset.val===perfil.frecuencia));frecuenciaSel=perfil.frecuencia;}
+  if(perfil.plataformas)document.querySelectorAll("#chips-plataformas .chip").forEach(c=>c.classList.toggle("active",perfil.plataformas.includes(c.dataset.val)));
+}
 
-  // ---- GENERAR ----
-  document.getElementById("genBtn").addEventListener("click", generar);
+function guardarPerfil(){
+  const rubro=document.getElementById("p-rubro").value;
+  if(!rubro){document.getElementById("perfil-msg").innerHTML='<div class="error">El rubro es obligatorio.</div>';return;}
+  perfil={nombre:document.getElementById("p-nombre").value,rubro,audiencia:document.getElementById("p-audiencia").value,objetivo:document.getElementById("p-objetivo").value,diferencial:document.getElementById("p-diferencial").value,evitar:document.getElementById("p-evitar").value,tono:getChip("chips-tono"),frecuencia:getChip("chips-frecuencia"),plataformas:getChips("chips-plataformas")};
+  localStorage.setItem("cm_perfil",JSON.stringify(perfil));
+  document.getElementById("perfil-msg").innerHTML='<div class="success-bar" style="margin-top:.75rem">Perfil guardado correctamente.</div>';
+  setTimeout(()=>document.getElementById("perfil-msg").innerHTML="",3000);
+}
 
-  async function generar() {
-    const rubro = document.getElementById("rubro").value;
-    const audiencia = document.getElementById("audiencia").value;
-    const resultsDiv = document.getElementById("results");
-    const btn = document.getElementById("genBtn");
+function checkPerfilPreview(){
+  const prev=document.getElementById("perfil-preview"),no=document.getElementById("no-perfil");
+  if(perfil.rubro){
+    document.getElementById("pp-nombre").textContent=perfil.nombre||"Sin nombre";
+    document.getElementById("pp-rubro").textContent=perfil.rubro;
+    document.getElementById("pp-frec").textContent=(perfil.frecuencia||"3x")+" por semana";
+    prev.style.display="block";no.style.display="none";
+  }else{prev.style.display="none";no.style.display="block";}
+}
 
-    if (!rubro) {
-      resultsDiv.innerHTML = '<div class="error-box">Por favor seleccioná tu rubro antes de continuar.</div>';
-      return;
-    }
+async function generarPlan(){
+  const periodo=getChip("chips-periodo")||"semanal";
+  const res=document.getElementById("plan-result");
+  res.innerHTML='<div class="loading"><div class="spinner"></div><p>Armando tu calendario...</p></div>';
+  try{
+    const r=await fetch("/api/planificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marca:perfil.nombre||"",rubro:perfil.rubro||"Marketing digital",tono:perfil.tono||"profesional pero humano",objetivo:perfil.objetivo||"",plataformas:(perfil.plataformas||["Instagram","TikTok"]).join(", "),frecuencia:perfil.frecuencia||"3x",periodo})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error);
+    planActual=data.plan;
+    renderCalendario(planActual,periodo);
+  }catch(e){res.innerHTML=`<div class="error">Error: ${e.message}</div>`;}
+}
 
-    btn.disabled = true;
-    btn.textContent = "Generando...";
-    resultsDiv.innerHTML = `
-      <div class="loading-wrap">
-        <div class="spinner"></div>
-        <p>Pensando ideas para tu rubro...</p>
-      </div>`;
-
-    try {
-      const res = await fetch("/api/generar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rubro, audiencia, formato: formatoSel, cantidad: cantidadSel })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Error desconocido");
-
-      ultimasIdeas = data.ideas.map(i => ({ ...i, rubro, formato: formatoSel, fecha: new Date().toLocaleDateString("es-AR") }));
-
-      // Guardar en historial
-      historial.unshift({ rubro, audiencia, formato: formatoSel, cantidad: cantidadSel, fecha: new Date().toLocaleDateString("es-AR") });
-      historial = historial.slice(0, 20);
-      localStorage.setItem("historial", JSON.stringify(historial));
-
-      renderResultados();
-
-    } catch (err) {
-      resultsDiv.innerHTML = `<div class="error-box">Error: ${err.message}</div>`;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Generar ideas";
-    }
+function renderCalendario(plan,periodo){
+  const res=document.getElementById("plan-result");
+  const dias=periodo==="mensual"?30:7;
+  const diasSem=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+  const postsPorDia={};
+  plan.forEach((p,i)=>{postsPorDia[p.dia]={...p,idx:i};});
+  let header='<div class="cal-header">'+diasSem.map(d=>`<div class="cal-day-name">${d}</div>`).join("")+"</div>";
+  let grid='<div class="cal-grid">';
+  for(let d=1;d<=dias;d++){
+    const p=postsPorDia[d];
+    if(p)grid+=`<div class="cal-cell has-post" onclick="abrirPieza(${p.idx})"><div class="cal-num">${d}</div><div class="cal-formato">${p.formato}</div><div class="cal-tema">${p.tema}</div></div>`;
+    else grid+=`<div class="cal-cell empty"><div class="cal-num">${d}</div></div>`;
   }
+  grid+="</div>";
+  let lista='<div class="plan-list">';
+  plan.forEach((p,i)=>{lista+=`<div class="plan-item" onclick="abrirPieza(${i})"><div class="plan-item-top"><span class="plan-dia">${p.fecha_relativa}</span><span class="plan-formato">${p.formato}</span></div><div class="plan-tema">${p.tema}</div><div class="plan-angulo">${p.plataforma} · ${p.objetivo_post}</div></div>`;});
+  lista+="</div>";
+  res.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin:1rem 0 .5rem"><div style="font-size:14px;font-weight:600">${plan.length} posts planificados</div><button class="btn btn-sm" onclick="exportarPlanTXT()">Exportar plan</button></div>${header}${grid}${lista}`;
+}
 
-  function renderResultados() {
-    const resultsDiv = document.getElementById("results");
-    const savedTitles = banco.map(i => i.titulo);
+async function abrirPieza(idx){
+  const post=planActual[idx];
+  document.getElementById("modal-title").textContent=post.tema;
+  document.getElementById("modal-body").innerHTML='<div class="loading"><div class="spinner"></div><p>Generando guión, tomas y copy...</p></div>';
+  document.getElementById("modal-overlay").classList.remove("hidden");
+  document.body.style.overflow="hidden";
+  try{
+    const r=await fetch("/api/pieza",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marca:perfil.nombre||"",rubro:perfil.rubro||"Marketing digital",tono:perfil.tono||"profesional pero humano",objetivo:perfil.objetivo||"",plataforma:post.plataforma,formato:post.formato,tema:post.tema,angulo:post.angulo,objetivo_post:post.objetivo_post})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error);
+    renderPieza(data,post);
+  }catch(e){document.getElementById("modal-body").innerHTML=`<div class="error">Error: ${e.message}</div>`;}
+}
 
-    resultsDiv.innerHTML = `
-      <div class="results-header" style="margin-top:1.5rem;">
-        <h2>${ultimasIdeas.length} ideas generadas</h2>
-        <div class="results-actions">
-          <button class="btn-sec" onclick="guardarTodas()">Guardar todas</button>
-        </div>
+function renderPieza(d,post){
+  const tomasHTML=(d.tomas||[]).map(t=>`<div class="toma-card"><div class="toma-num">Toma ${t.numero} · ${t.duracion}</div><div class="toma-row"><span>Cámara:</span> ${t.camara}</div><div class="toma-row"><span>En pantalla:</span> ${t.descripcion}</div>${t.texto_pantalla?`<div class="toma-row"><span>Texto sup.:</span> ${t.texto_pantalla}</div>`:""}<div class="toma-row"><span>Audio:</span> ${t.audio}</div></div>`).join("");
+  const hashtagsHTML=(d.hashtags||[]).map(h=>`<span class="hashtag">#${h.replace("#","")}</span>`).join("");
+  const piezaData=encodeURIComponent(JSON.stringify({titulo:post.tema,hook:d.hook,guion:d.guion,copy:d.copy,hashtags:d.hashtags,musica:d.musica,tip_produccion:d.tip_produccion,formato:post.formato,plataforma:post.plataforma,fecha:new Date().toLocaleDateString("es-AR")}));
+  document.getElementById("modal-body").innerHTML=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
+      <span class="chip active" style="cursor:default">${post.formato}</span>
+      <span class="chip active" style="cursor:default">${post.plataforma}</span>
+      <span class="nivel nivel-${post.nivel_produccion}">${post.nivel_produccion}</span>
+    </div>
+    <div class="pieza-section"><div class="pieza-label">Hook de apertura</div><div class="pieza-hook">${d.hook}</div></div>
+    <div class="pieza-section"><div class="pieza-label">Guión completo</div><div class="guion-block"><div class="guion-part"><div class="guion-part-label">Intro</div>${d.guion?.intro||""}</div><div class="guion-part"><div class="guion-part-label">Desarrollo</div>${d.guion?.desarrollo||""}</div><div class="guion-part"><div class="guion-part-label">Cierre + CTA</div>${d.guion?.cierre||""}</div></div></div>
+    <div class="pieza-section"><div class="pieza-label">Plan de tomas</div>${tomasHTML}</div>
+    <div class="pieza-section"><div class="pieza-label">Copy (click para copiar)</div><div class="copy-box" onclick="copiarCopy(this,'${encodeURIComponent(d.copy||"")}')">${(d.copy||"").replace(/\n/g,"<br>")}</div><div class="hashtags">${hashtagsHTML}</div></div>
+    <div class="pieza-section"><div class="pieza-label">Música sugerida</div><div style="font-size:13px">${d.musica||""}</div></div>
+    <div class="pieza-section"><div class="pieza-label">Tip de producción</div><div class="tip-box">${d.tip_produccion||""}</div></div>
+    <div style="display:flex;gap:8px;margin-top:1.25rem;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1" onclick="guardarAlBanco('${piezaData}',this)">Guardar en banco</button>
+      <button class="btn" onclick="cerrarModalBtn()">Cerrar</button>
+    </div>`;
+}
+
+function copiarCopy(el,encoded){
+  navigator.clipboard.writeText(decodeURIComponent(encoded)).then(()=>{el.style.background="#E8F5E9";setTimeout(()=>el.style.background="",1500);});
+}
+function cerrarModal(e){if(e.target===document.getElementById("modal-overlay"))cerrarModalBtn();}
+function cerrarModalBtn(){document.getElementById("modal-overlay").classList.add("hidden");document.body.style.overflow="";}
+
+async function generarIdeas(){
+  const rubro=document.getElementById("i-rubro").value;
+  const audiencia=document.getElementById("i-audiencia").value;
+  const res=document.getElementById("ideas-result");
+  const btn=document.querySelector("#page-ideas .btn-primary");
+  if(!rubro){res.innerHTML='<div class="error">Seleccioná un rubro primero.</div>';return;}
+  btn.disabled=true;btn.textContent="Generando...";
+  res.innerHTML='<div class="loading"><div class="spinner"></div><p>Pensando ideas...</p></div>';
+  try{
+    const r=await fetch("/api/generar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rubro,audiencia,formato:formatoIdeasSel,cantidad:cantidadSel})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error);
+    window._ultimasIdeas=data.ideas.map(i=>({...i,rubro,formato:formatoIdeasSel,fecha:new Date().toLocaleDateString("es-AR")}));
+    res.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin:1rem 0 .5rem"><div style="font-size:14px;font-weight:600">${data.ideas.length} ideas</div><button class="btn btn-sm" onclick="guardarTodasIdeas()">Guardar todas</button></div>`+
+    data.ideas.map((idea,i)=>`<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div><div style="font-size:11px;font-weight:600;color:var(--p);text-transform:uppercase;margin-bottom:4px">Idea ${i+1}</div>
+        <div style="font-size:15px;font-weight:500;margin-bottom:6px">${idea.titulo}</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px">${idea.descripcion}</div>
+        <div style="font-size:13px;color:var(--pd);font-style:italic;padding-left:8px;border-left:2px solid var(--p)">"${idea.hook}"</div></div>
+        <button class="btn btn-sm" id="saveidea-${i}" onclick="guardarIdeaRapida(${i},this)">Guardar</button>
       </div>
-      ${ultimasIdeas.map((idea, i) => {
-        const isSaved = savedTitles.includes(idea.titulo);
-        return `
-        <div class="idea-card" id="card-${i}">
-          <div class="idea-card-top">
-            <div>
-              <div class="idea-num">Idea ${i + 1} · ${idea.formato}</div>
-              <div class="idea-titulo">${idea.titulo}</div>
-            </div>
-            <button class="save-btn ${isSaved ? "saved" : ""}" onclick="toggleGuardar(${i})" title="Guardar idea" id="savebtn-${i}">
-              ${isSaved ? "★" : "☆"}
-            </button>
-          </div>
-          <div class="idea-desc">${idea.descripcion}</div>
-          <div class="idea-hook">
-            <div class="idea-hook-label">Hook de apertura</div>
-            "${idea.hook}"
-          </div>
-          <span class="idea-tag">${idea.angulo}</span>
-        </div>`;
-      }).join("")}
-    `;
-    updateBancoCount();
-  }
+      <div style="margin-top:10px"><span style="font-size:11px;background:var(--pl);color:var(--pd);padding:2px 8px;border-radius:20px;font-weight:600">${idea.angulo}</span></div>
+    </div>`).join("");
+  }catch(e){res.innerHTML=`<div class="error">Error: ${e.message}</div>`;}
+  finally{btn.disabled=false;btn.textContent="Generar ideas";}
+}
 
-  // ---- GUARDAR ----
-  function toggleGuardar(i) {
-    const idea = ultimasIdeas[i];
-    const idx = banco.findIndex(b => b.titulo === idea.titulo);
-    const btn = document.getElementById("savebtn-" + i);
+function guardarIdeaRapida(i,btn){
+  const idea=(window._ultimasIdeas||[])[i];
+  if(!idea)return;
+  const obj={titulo:idea.titulo,descripcion:idea.descripcion,hook:idea.hook,angulo:idea.angulo,formato:formatoIdeasSel,fecha:new Date().toLocaleDateString("es-AR"),tipo:"idea"};
+  if(!banco.find(b=>b.titulo===obj.titulo)){banco.unshift(obj);saveBanco();}
+  btn.textContent="Guardado";btn.disabled=true;
+}
+function guardarTodasIdeas(){(window._ultimasIdeas||[]).forEach((_,i)=>{const btn=document.getElementById("saveidea-"+i);if(btn&&!btn.disabled)guardarIdeaRapida(i,btn);});}
 
-    if (idx === -1) {
-      banco.unshift(idea);
-      btn.textContent = "★";
-      btn.classList.add("saved");
-    } else {
-      banco.splice(idx, 1);
-      btn.textContent = "☆";
-      btn.classList.remove("saved");
-    }
-    localStorage.setItem("banco", JSON.stringify(banco));
-    updateBancoCount();
-  }
+function guardarAlBanco(encoded,btn){
+  const p=JSON.parse(decodeURIComponent(encoded));
+  const obj={titulo:p.titulo,hook:p.hook,guion:p.guion,copy:p.copy,hashtags:p.hashtags,musica:p.musica,tip:p.tip_produccion,formato:p.formato,plataforma:p.plataforma,fecha:p.fecha,tipo:"pieza"};
+  if(!banco.find(b=>b.titulo===obj.titulo)){banco.unshift(obj);saveBanco();}
+  btn.textContent="Guardado";btn.disabled=true;
+}
 
-  function guardarTodas() {
-    ultimasIdeas.forEach((idea, i) => {
-      if (!banco.find(b => b.titulo === idea.titulo)) {
-        banco.unshift(idea);
-        const btn = document.getElementById("savebtn-" + i);
-        if (btn) { btn.textContent = "★"; btn.classList.add("saved"); }
-      }
-    });
-    localStorage.setItem("banco", JSON.stringify(banco));
-    updateBancoCount();
-  }
+function saveBanco(){localStorage.setItem("cm_banco",JSON.stringify(banco));updateBadge();}
+function updateBadge(){document.getElementById("badge-banco").textContent=banco.length||"";}
+function renderBanco(){
+  const lista=document.getElementById("banco-lista");
+  updateBadge();
+  if(!banco.length){lista.innerHTML='<div class="empty"><div class="empty-icon">📭</div><p>Todavía no guardaste nada.<br>Generá ideas o piezas y guardalas acá.</p></div>';return;}
+  lista.innerHTML=banco.map((item,i)=>`<div class="banco-item"><div class="banco-item-top"><div><div class="banco-tema">${item.titulo}</div><div class="banco-meta">${item.formato||""} ${item.plataforma?"· "+item.plataforma:""} · ${item.fecha} · ${item.tipo==="pieza"?"Pieza completa":"Idea"}</div></div><button class="btn btn-sm btn-danger" onclick="eliminarBanco(${i})">✕</button></div>${item.hook?`<div class="banco-hook">"${item.hook}"</div>`:""}</div>`).join("");
+}
+function eliminarBanco(i){banco.splice(i,1);saveBanco();renderBanco();}
+function limpiarBanco(){if(confirm("¿Eliminás todo el banco?")){banco=[];saveBanco();renderBanco();}}
 
-  function updateBancoCount() {
-    const n = banco.length;
-    document.getElementById("banco-count").textContent = n > 0 ? n : "";
-    document.getElementById("banco-total").textContent = n;
-  }
+function exportarTXT(){
+  if(!banco.length){alert("No hay contenido guardado.");return;}
+  let txt="CM SUITE — BANCO DE CONTENIDO\n"+"=".repeat(50)+"\n\n";
+  banco.forEach((item,i)=>{
+    txt+=`${i+1}. ${item.titulo}\nFormato: ${item.formato||"-"} | Fecha: ${item.fecha}\n`;
+    if(item.hook)txt+=`Hook: "${item.hook}"\n`;
+    if(item.guion)txt+=`\nGUIÓN:\nIntro: ${item.guion.intro}\nDesarrollo: ${item.guion.desarrollo}\nCierre: ${item.guion.cierre}\n`;
+    if(item.copy)txt+=`\nCOPY:\n${item.copy}\n`;
+    if(item.hashtags)txt+=`\nHASHTAGS: ${item.hashtags.map(h=>"#"+h.replace("#","")).join(" ")}\n`;
+    txt+="\n"+"-".repeat(50)+"\n\n";
+  });
+  descargar("banco-contenido.txt",txt,"text/plain");
+}
+function exportarCSV(){
+  if(!banco.length){alert("No hay contenido guardado.");return;}
+  let csv="Titulo,Formato,Plataforma,Hook,Copy,Hashtags,Fecha\n";
+  banco.forEach(item=>{csv+=`"${esc(item.titulo)}","${esc(item.formato)}","${esc(item.plataforma)}","${esc(item.hook)}","${esc(item.copy)}","${esc((item.hashtags||[]).join(" "))}","${esc(item.fecha)}"\n`;});
+  descargar("banco-contenido.csv",csv,"text/csv");
+}
+function exportarPlanTXT(){
+  if(!planActual.length)return;
+  let txt="CM SUITE — PLAN DE CONTENIDO\n"+"=".repeat(50)+"\n\n";
+  planActual.forEach(p=>{txt+=`Día ${p.dia} (${p.fecha_relativa})\nPlataforma: ${p.plataforma} | Formato: ${p.formato}\nTema: ${p.tema}\nÁngulo: ${p.angulo} | Objetivo: ${p.objetivo_post}\n\n`;});
+  descargar("plan-contenido.txt",txt,"text/plain");
+}
+function esc(s){return(s||"").replace(/"/g,'""');}
+function descargar(nombre,contenido,tipo){const blob=new Blob([contenido],{type:tipo});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;a.click();}
 
-  // ---- BANCO ----
-  function renderBanco() {
-    const lista = document.getElementById("banco-lista");
-    updateBancoCount();
-    if (banco.length === 0) {
-      lista.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Todavía no guardaste ninguna idea.<br>Generá ideas y tocá la estrella para guardarlas.</p></div>`;
-      return;
-    }
-    lista.innerHTML = banco.map((idea, i) => `
-      <div class="idea-card">
-        <div class="idea-card-top">
-          <div>
-            <div class="idea-num">${idea.rubro} · ${idea.formato} · ${idea.fecha}</div>
-            <div class="idea-titulo">${idea.titulo}</div>
-          </div>
-          <button class="save-btn saved" onclick="eliminarDeBanco(${i})" title="Eliminar">✕</button>
-        </div>
-        <div class="idea-desc">${idea.descripcion}</div>
-        <div class="idea-hook">
-          <div class="idea-hook-label">Hook de apertura</div>
-          "${idea.hook}"
-        </div>
-        <span class="idea-tag">${idea.angulo}</span>
-      </div>
-    `).join("");
-  }
-
-  function eliminarDeBanco(i) {
-    banco.splice(i, 1);
-    localStorage.setItem("banco", JSON.stringify(banco));
-    renderBanco();
-  }
-
-  function limpiarBanco() {
-    if (confirm("¿Seguro que querés eliminar todas las ideas guardadas?")) {
-      banco = [];
-      localStorage.setItem("banco", JSON.stringify(banco));
-      renderBanco();
-    }
-  }
-
-  // ---- HISTORIAL ----
-  function renderHistorial() {
-    const lista = document.getElementById("historial-lista");
-    if (historial.length === 0) {
-      lista.innerHTML = `<div class="empty-state"><div class="icon">🕓</div><p>Todavía no generaste ninguna búsqueda.</p></div>`;
-      return;
-    }
-    lista.innerHTML = historial.map((h, i) => `
-      <div class="historial-item">
-        <div class="historial-left">
-          <span class="historial-rubro">${h.rubro}</span>
-          <span class="historial-meta">${h.formato} · ${h.cantidad} ideas · ${h.fecha}</span>
-        </div>
-        <button class="historial-btn" onclick="repetirBusqueda(${i})">Repetir →</button>
-      </div>
-    `).join("");
-  }
-
-  function repetirBusqueda(i) {
-    const h = historial[i];
-    document.getElementById("rubro").value = h.rubro;
-    document.getElementById("audiencia").value = h.audiencia || "";
-    document.querySelectorAll(".chip").forEach(c => {
-      c.classList.toggle("active", c.dataset.val === h.formato);
-    });
-    formatoSel = h.formato;
-    document.querySelectorAll(".cantidad-opt").forEach(c => {
-      c.classList.toggle("active", c.dataset.val === h.cantidad);
-    });
-    cantidadSel = h.cantidad;
-    showPage("generador");
-    document.querySelectorAll(".nav-tab")[0].classList.add("active");
-    document.querySelectorAll(".nav-tab")[2].classList.remove("active");
-    generar();
-  }
-
-  function limpiarHistorial() {
-    if (confirm("¿Limpiar el historial?")) {
-      historial = [];
-      localStorage.setItem("historial", JSON.stringify(historial));
-      renderHistorial();
-    }
-  }
-
-  // ---- EXPORTAR ----
-  function exportarTXT() {
-    if (banco.length === 0) { alert("No hay ideas guardadas para exportar."); return; }
-    let txt = "BANCO DE IDEAS DE CONTENIDO\n";
-    txt += "Exportado: " + new Date().toLocaleDateString("es-AR") + "\n\n";
-    txt += "=".repeat(50) + "\n\n";
-    banco.forEach((idea, i) => {
-      txt += `IDEA ${i + 1} — ${idea.titulo}\n`;
-      txt += `Rubro: ${idea.rubro} | Formato: ${idea.formato} | Ángulo: ${idea.angulo}\n`;
-      txt += `Descripción: ${idea.descripcion}\n`;
-      txt += `Hook: "${idea.hook}"\n\n`;
-      txt += "-".repeat(50) + "\n\n";
-    });
-    descargar("ideas-contenido.txt", txt, "text/plain");
-  }
-
-  function exportarCSV() {
-    if (banco.length === 0) { alert("No hay ideas guardadas para exportar."); return; }
-    let csv = "Titulo,Rubro,Formato,Angulo,Descripcion,Hook,Fecha\n";
-    banco.forEach(idea => {
-      csv += `"${esc(idea.titulo)}","${esc(idea.rubro)}","${esc(idea.formato)}","${esc(idea.angulo)}","${esc(idea.descripcion)}","${esc(idea.hook)}","${esc(idea.fecha)}"\n`;
-    });
-    descargar("ideas-contenido.csv", csv, "text/csv");
-  }
-
-  function esc(s) { return (s || "").replace(/"/g, '""'); }
-
-  function descargar(nombre, contenido, tipo) {
-    const blob = new Blob([contenido], { type: tipo });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = nombre; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // ---- INIT ----
-  updateBancoCount();
+cargarPerfil();
+updateBadge();
 </script>
 </body>
 </html>
-
