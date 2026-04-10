@@ -1,1 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de Ideas de Contenido</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple: #7F77DD;
+      --purple-light: #EEEDFE;
+      --purple-dark: #3C3489;
+      --gray-bg: #F8F8F8;
+      --border: #E5E5E5;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --white: #fff;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--gray-bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { font-size: 16px; font-weight: 600; color: var(--text); }
+    .logo span { color: var(--purple); }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .nav-tab.active { background: var(--purple-light); color: var(--purple-dark); font-weight: 500; }
+    .nav-tab:hover:not(.active) { background: var(--gray-bg); }
+
+    /* PÁGINAS */
+    .page { display: none; max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
+    .page.active { display: block; }
+
+    /* HERO */
+    .hero { margin-bottom: 2rem; }
+    .hero h1 { font-size: 26px; font-weight: 600; margin-bottom: 8px; }
+    .hero p { font-size: 15px; color: var(--text-muted); line-height: 1.6; }
+
+    /* FORMULARIO */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .field { margin-bottom: 1.25rem; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, input:focus { border-color: var(--purple); }
+
+    /* CHIPS DE FORMATO */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--white);
+      color: var(--text-muted);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .chip.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+
+    /* CANTIDAD */
+    .cantidad-opts { display: flex; gap: 8px; }
+    .cantidad-opt {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--white);
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .cantidad-opt.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple-dark); font-weight: 500; }
+
+    /* BOTÓN PRINCIPAL */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--purple);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      margin-top: 1rem;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* BOTÓN SECUNDARIO */
+    .btn-sec {
+      padding: 8px 16px;
+      background: var(--white);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-sec:hover { background: var(--gray-bg); }
+
+    /* LOADING */
+    .loading-wrap { text-align: center; padding: 3rem 1rem; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--purple-light);
+      border-top-color: var(--purple);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-wrap p { color: var(--text-muted); font-size: 14px; }
+
+    /* RESULTADOS */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .results-header h2 { font-size: 16px; font-weight: 500; }
+    .results-actions { display: flex; gap: 8px; }
+
+    /* IDEA CARD */
+    .idea-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .idea-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .idea-num { font-size: 11px; font-weight: 600; color: var(--purple); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .idea-titulo { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.4; }
+    .save-btn {
+      flex-shrink: 0;
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--white);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .save-btn:hover { background: var(--purple-light); border-color: var(--purple); }
+    .save-btn.saved { background: var(--purple-light); border-color: var(--purple); }
+    .idea-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
+    .idea-hook {
+      background: var(--purple-light);
+      border-left: 3px solid var(--purple);
+      padding: 8px 12px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 13px;
+      color: var(--purple-dark);
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+    .idea-hook-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; font-style: normal; }
+    .idea-tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 3px 10px;
+      background: var(--purple-light);
+      color: var(--purple-dark);
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* ERROR */
+    .error-box {
+      background: #FFF0F0;
+      border: 1px solid #FFCDD2;
+      color: #C62828;
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      margin-top: 1rem;
+    }
+
+    /* BANCO DE IDEAS */
+    .empty-state { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
+    .empty-state .icon { font-size: 40px; margin-bottom: 1rem; }
+    .empty-state p { font-size: 15px; }
+    .banco-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .banco-header h2 { font-size: 18px; font-weight: 500; }
+    .badge { font-size: 12px; background: var(--purple-light); color: var(--purple-dark); padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+
+    /* HISTORIAL */
+    .historial-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .historial-left { display: flex; flex-direction: column; gap: 2px; }
+    .historial-rubro { font-weight: 500; }
+    .historial-meta { font-size: 12px; color: var(--text-muted); }
+    .historial-btn { font-size: 12px; color: var(--purple); cursor: pointer; background: none; border: none; font-family: inherit; }
+
+    /* RESPONSIVE */
+    @media (max-width: 480px) {
+      .nav-tabs { gap: 2px; }
+      .nav-tab { padding: 6px 10px; font-size: 12px; }
+      header { padding: 0.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ideas<span>AI</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('generador')">Generador</button>
+    <button class="nav-tab" onclick="showPage('banco')">Banco <span id="banco-count"></span></button>
+    <button class="nav-tab" onclick="showPage('historial')">Historial</button>
+  </div>
+</header>
+
+<!-- PÁGINA: GENERADOR -->
+<div class="page active" id="page-generador">
+  <div class="hero">
+    <h1>Generá ideas de contenido ✨</h1>
+    <p>Completá los campos y la IA te genera ideas originales con hook incluido.</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>¿A qué rubro pertenecés?</label>
+      <select id="rubro">
+        <option value="">Seleccioná tu rubro...</option>
+        <option>Fitness y entrenamiento</option>
+        <option>Nutrición y alimentación saludable</option>
+        <option>Psicología y bienestar mental</option>
+        <option>Finanzas personales e inversiones</option>
+        <option>Emprendimiento y negocios</option>
+        <option>Marketing digital</option>
+        <option>Community management</option>
+        <option>Diseño gráfico</option>
+        <option>Fotografía y video</option>
+        <option>Moda y estilo</option>
+        <option>Belleza y skincare</option>
+        <option>Cocina y gastronomía</option>
+        <option>Viajes y turismo</option>
+        <option>Tecnología y software</option>
+        <option>Educación y coaching</option>
+        <option>Arte y creatividad</option>
+        <option>Inmobiliaria y propiedades</option>
+        <option>Medicina y salud</option>
+        <option>Derecho y asesoría legal</option>
+        <option>Arquitectura e interiorismo</option>
+        <option>Otro</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>¿A quién le hablás? (opcional)</label>
+      <input type="text" id="audiencia" placeholder="Ej: madres primerizas, jóvenes universitarios..." />
+    </div>
+
+    <div class="field">
+      <label>Formato de contenido</label>
+      <div class="chips" id="formatos">
+        <div class="chip active" data-val="Reels / TikTok">Reels / TikTok</div>
+        <div class="chip" data-val="Carrusel">Carrusel</div>
+        <div class="chip" data-val="Historia">Historia</div>
+        <div class="chip" data-val="Post estático">Post estático</div>
+        <div class="chip" data-val="Newsletter">Newsletter</div>
+        <div class="chip" data-val="Podcast">Podcast</div>
+        <div class="chip" data-val="Blog">Blog</div>
+        <div class="chip" data-val="YouTube">YouTube</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>¿Cuántas ideas?</label>
+      <div class="cantidad-opts">
+        <div class="cantidad-opt" data-val="4">4</div>
+        <div class="cantidad-opt active" data-val="6">6</div>
+        <div class="cantidad-opt" data-val="8">8</div>
+        <div class="cantidad-opt" data-val="10">10</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="genBtn">Generar ideas</button>
+
+  <div id="results"></div>
+</div>
+
+<!-- PÁGINA: BANCO -->
+<div class="page" id="page-banco">
+  <div class="banco-header">
+    <h2>Banco de ideas <span class="badge" id="banco-total">0</span></h2>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-sec" onclick="exportarTXT()">Exportar TXT</button>
+      <button class="btn-sec" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn-sec" onclick="limpiarBanco()" style="color:#C62828;">Limpiar</button>
+    </div>
+  </div>
+  <div id="banco-lista"></div>
+</div>
+
+<!-- PÁGINA: HISTORIAL -->
+<div class="page" id="page-historial">
+  <div class="banco-header">
+    <h2>Historial de búsquedas</h2>
+    <button class="btn-sec" onclick="limpiarHistorial()">Limpiar</button>
+  </div>
+  <div id="historial-lista"></div>
+</div>
+
+<script>
+  // ---- ESTADO ----
+  let formatoSel = "Reels / TikTok";
+  let cantidadSel = "6";
+  let banco = JSON.parse(localStorage.getItem("banco") || "[]");
+  let historial = JSON.parse(localStorage.getItem("historial") || "[]");
+  let ultimasIdeas = [];
+
+  // ---- NAVEGACIÓN ----
+  function showPage(name) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+    document.getElementById("page-" + name).classList.add("active");
+    event.target.classList.add("active");
+    if (name === "banco") renderBanco();
+    if (name === "historial") renderHistorial();
+  }
+
+  // ---- CHIPS ----
+  document.querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+      c.classList.add("active");
+      formatoSel = c.dataset.val;
+    });
+  });
+  document.querySelectorAll(".cantidad-opt").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll(".cantidad-opt").forEach(x => x.classList.remove("active"));
+      c.classList.add("active");
+      cantidadSel = c.dataset.val;
+    });
+  });
+
+  // ---- GENERAR ----
+  document.getElementById("genBtn").addEventListener("click", generar);
+
+  async function generar() {
+    const rubro = document.getElementById("rubro").value;
+    const audiencia = document.getElementById("audiencia").value;
+    const resultsDiv = document.getElementById("results");
+    const btn = document.getElementById("genBtn");
+
+    if (!rubro) {
+      resultsDiv.innerHTML = '<div class="error-box">Por favor seleccioná tu rubro antes de continuar.</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Generando...";
+    resultsDiv.innerHTML = `
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <p>Pensando ideas para tu rubro...</p>
+      </div>`;
+
+    try {
+      const res = await fetch("/api/generar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rubro, audiencia, formato: formatoSel, cantidad: cantidadSel })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Error desconocido");
+
+      ultimasIdeas = data.ideas.map(i => ({ ...i, rubro, formato: formatoSel, fecha: new Date().toLocaleDateString("es-AR") }));
+
+      // Guardar en historial
+      historial.unshift({ rubro, audiencia, formato: formatoSel, cantidad: cantidadSel, fecha: new Date().toLocaleDateString("es-AR") });
+      historial = historial.slice(0, 20);
+      localStorage.setItem("historial", JSON.stringify(historial));
+
+      renderResultados();
+
+    } catch (err) {
+      resultsDiv.innerHTML = `<div class="error-box">Error: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Generar ideas";
+    }
+  }
+
+  function renderResultados() {
+    const resultsDiv = document.getElementById("results");
+    const savedTitles = banco.map(i => i.titulo);
+
+    resultsDiv.innerHTML = `
+      <div class="results-header" style="margin-top:1.5rem;">
+        <h2>${ultimasIdeas.length} ideas generadas</h2>
+        <div class="results-actions">
+          <button class="btn-sec" onclick="guardarTodas()">Guardar todas</button>
+        </div>
+      </div>
+      ${ultimasIdeas.map((idea, i) => {
+        const isSaved = savedTitles.includes(idea.titulo);
+        return `
+        <div class="idea-card" id="card-${i}">
+          <div class="idea-card-top">
+            <div>
+              <div class="idea-num">Idea ${i + 1} · ${idea.formato}</div>
+              <div class="idea-titulo">${idea.titulo}</div>
+            </div>
+            <button class="save-btn ${isSaved ? "saved" : ""}" onclick="toggleGuardar(${i})" title="Guardar idea" id="savebtn-${i}">
+              ${isSaved ? "★" : "☆"}
+            </button>
+          </div>
+          <div class="idea-desc">${idea.descripcion}</div>
+          <div class="idea-hook">
+            <div class="idea-hook-label">Hook de apertura</div>
+            "${idea.hook}"
+          </div>
+          <span class="idea-tag">${idea.angulo}</span>
+        </div>`;
+      }).join("")}
+    `;
+    updateBancoCount();
+  }
+
+  // ---- GUARDAR ----
+  function toggleGuardar(i) {
+    const idea = ultimasIdeas[i];
+    const idx = banco.findIndex(b => b.titulo === idea.titulo);
+    const btn = document.getElementById("savebtn-" + i);
+
+    if (idx === -1) {
+      banco.unshift(idea);
+      btn.textContent = "★";
+      btn.classList.add("saved");
+    } else {
+      banco.splice(idx, 1);
+      btn.textContent = "☆";
+      btn.classList.remove("saved");
+    }
+    localStorage.setItem("banco", JSON.stringify(banco));
+    updateBancoCount();
+  }
+
+  function guardarTodas() {
+    ultimasIdeas.forEach((idea, i) => {
+      if (!banco.find(b => b.titulo === idea.titulo)) {
+        banco.unshift(idea);
+        const btn = document.getElementById("savebtn-" + i);
+        if (btn) { btn.textContent = "★"; btn.classList.add("saved"); }
+      }
+    });
+    localStorage.setItem("banco", JSON.stringify(banco));
+    updateBancoCount();
+  }
+
+  function updateBancoCount() {
+    const n = banco.length;
+    document.getElementById("banco-count").textContent = n > 0 ? n : "";
+    document.getElementById("banco-total").textContent = n;
+  }
+
+  // ---- BANCO ----
+  function renderBanco() {
+    const lista = document.getElementById("banco-lista");
+    updateBancoCount();
+    if (banco.length === 0) {
+      lista.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Todavía no guardaste ninguna idea.<br>Generá ideas y tocá la estrella para guardarlas.</p></div>`;
+      return;
+    }
+    lista.innerHTML = banco.map((idea, i) => `
+      <div class="idea-card">
+        <div class="idea-card-top">
+          <div>
+            <div class="idea-num">${idea.rubro} · ${idea.formato} · ${idea.fecha}</div>
+            <div class="idea-titulo">${idea.titulo}</div>
+          </div>
+          <button class="save-btn saved" onclick="eliminarDeBanco(${i})" title="Eliminar">✕</button>
+        </div>
+        <div class="idea-desc">${idea.descripcion}</div>
+        <div class="idea-hook">
+          <div class="idea-hook-label">Hook de apertura</div>
+          "${idea.hook}"
+        </div>
+        <span class="idea-tag">${idea.angulo}</span>
+      </div>
+    `).join("");
+  }
+
+  function eliminarDeBanco(i) {
+    banco.splice(i, 1);
+    localStorage.setItem("banco", JSON.stringify(banco));
+    renderBanco();
+  }
+
+  function limpiarBanco() {
+    if (confirm("¿Seguro que querés eliminar todas las ideas guardadas?")) {
+      banco = [];
+      localStorage.setItem("banco", JSON.stringify(banco));
+      renderBanco();
+    }
+  }
+
+  // ---- HISTORIAL ----
+  function renderHistorial() {
+    const lista = document.getElementById("historial-lista");
+    if (historial.length === 0) {
+      lista.innerHTML = `<div class="empty-state"><div class="icon">🕓</div><p>Todavía no generaste ninguna búsqueda.</p></div>`;
+      return;
+    }
+    lista.innerHTML = historial.map((h, i) => `
+      <div class="historial-item">
+        <div class="historial-left">
+          <span class="historial-rubro">${h.rubro}</span>
+          <span class="historial-meta">${h.formato} · ${h.cantidad} ideas · ${h.fecha}</span>
+        </div>
+        <button class="historial-btn" onclick="repetirBusqueda(${i})">Repetir →</button>
+      </div>
+    `).join("");
+  }
+
+  function repetirBusqueda(i) {
+    const h = historial[i];
+    document.getElementById("rubro").value = h.rubro;
+    document.getElementById("audiencia").value = h.audiencia || "";
+    document.querySelectorAll(".chip").forEach(c => {
+      c.classList.toggle("active", c.dataset.val === h.formato);
+    });
+    formatoSel = h.formato;
+    document.querySelectorAll(".cantidad-opt").forEach(c => {
+      c.classList.toggle("active", c.dataset.val === h.cantidad);
+    });
+    cantidadSel = h.cantidad;
+    showPage("generador");
+    document.querySelectorAll(".nav-tab")[0].classList.add("active");
+    document.querySelectorAll(".nav-tab")[2].classList.remove("active");
+    generar();
+  }
+
+  function limpiarHistorial() {
+    if (confirm("¿Limpiar el historial?")) {
+      historial = [];
+      localStorage.setItem("historial", JSON.stringify(historial));
+      renderHistorial();
+    }
+  }
+
+  // ---- EXPORTAR ----
+  function exportarTXT() {
+    if (banco.length === 0) { alert("No hay ideas guardadas para exportar."); return; }
+    let txt = "BANCO DE IDEAS DE CONTENIDO\n";
+    txt += "Exportado: " + new Date().toLocaleDateString("es-AR") + "\n\n";
+    txt += "=".repeat(50) + "\n\n";
+    banco.forEach((idea, i) => {
+      txt += `IDEA ${i + 1} — ${idea.titulo}\n`;
+      txt += `Rubro: ${idea.rubro} | Formato: ${idea.formato} | Ángulo: ${idea.angulo}\n`;
+      txt += `Descripción: ${idea.descripcion}\n`;
+      txt += `Hook: "${idea.hook}"\n\n`;
+      txt += "-".repeat(50) + "\n\n";
+    });
+    descargar("ideas-contenido.txt", txt, "text/plain");
+  }
+
+  function exportarCSV() {
+    if (banco.length === 0) { alert("No hay ideas guardadas para exportar."); return; }
+    let csv = "Titulo,Rubro,Formato,Angulo,Descripcion,Hook,Fecha\n";
+    banco.forEach(idea => {
+      csv += `"${esc(idea.titulo)}","${esc(idea.rubro)}","${esc(idea.formato)}","${esc(idea.angulo)}","${esc(idea.descripcion)}","${esc(idea.hook)}","${esc(idea.fecha)}"\n`;
+    });
+    descargar("ideas-contenido.csv", csv, "text/csv");
+  }
+
+  function esc(s) { return (s || "").replace(/"/g, '""'); }
+
+  function descargar(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = nombre; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- INIT ----
+  updateBancoCount();
+</script>
+</body>
+</html>
 
