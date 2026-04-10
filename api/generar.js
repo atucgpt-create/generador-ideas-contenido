@@ -61,4 +61,3 @@ Las ideas deben ser MUY específicas del rubro, no genéricas. Sé creativo y pr
     return res.status(500).json({ error: "Error al generar ideas: " + err.message });
   }
 }
-
